@@ -32,7 +32,7 @@ without a hosted registry.
 From a local clone:
 
 ```
-/plugin marketplace add /path/to/teams-transcript-fetch-plugin
+/plugin marketplace add /path/to/teams-transcript-tools
 /plugin install teams-transcripts@teams-transcript-tools
 ```
 

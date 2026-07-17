@@ -21,7 +21,7 @@ Fetch one or more Microsoft Teams meeting transcripts and save them as readable 
 
 ## Prerequisites & configuration
 
-This skill has **no hardcoded credentials or server IDs**. It relies on two things the user configures once:
+This skill has **no hardcoded credentials or server IDs**. It relies on three things the user configures once:
 
 1. **A Microsoft 365 / Outlook MCP connector** must be connected in this Claude Code session. It must expose (at minimum) a calendar-search tool and a resource-read tool whose names end in the suffixes `__outlook_calendar_search` and `__read_resource`. Any Microsoft 365 connector that surfaces `meetingTranscriptUrl` on calendar events works — the server's ID/prefix does not matter (see the preflight step below). Transcription must have been enabled on the Teams meetings you want to fetch.
 
@@ -75,14 +75,15 @@ Call `<prefix>__read_resource` with the `meetingTranscriptUrl` value verbatim (i
 **Handling large transcripts:** The tool may save the result to a file path instead of returning it inline when the content is large. If the result contains a file path reference rather than inline content, read the file in Python chunks:
 
 ```bash
-python3 -c "
-with open('<path>') as f:
-    content = f.read()
-import json
-data = json.loads(content)
-# extract data['transcripts'][0]['content']
-"
+python3 - "<path>" <<'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    data = json.load(f)
+print(data["transcripts"][0]["content"])
+PY
 ```
+
+Passing the path as an argument (rather than interpolating it into the source) keeps a path containing quotes or spaces from breaking the command.
 
 Read in slices of ~12,000 characters if needed to avoid truncation. (Python 3 is the only local dependency, and only for oversized transcripts.)
 
