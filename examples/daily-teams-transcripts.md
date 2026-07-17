@@ -1,10 +1,10 @@
-# Optional recipe: hourly auto-fetch of new transcripts
+# Optional recipe: daily auto-fetch routine (runs hourly on workdays)
 
 This is a **template** for a scheduled task that runs during your workday and fetches
 any newly-finished Teams meetings automatically. It is optional — the skill works fine
-on its own. Copy the prompt below into a Claude Code scheduled task (see README → "Set up
-the daily routine"). Nothing here is machine-specific except the two clearly-marked values
-you set once.
+on its own. Copy the prompt below into a Claude Code scheduled task (see README →
+"Optional: set up the daily auto-fetch routine"). Nothing here is machine-specific except
+the two clearly-marked values you set once.
 
 ## Two values to set
 
