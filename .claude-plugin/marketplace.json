@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "teams-transcript-tools",
+  "owner": {
+    "name": "Naomi Robichaud",
+    "email": "nrobichaud@adobe.com"
+  },
+  "description": "Tools for pulling and saving Microsoft Teams meeting transcripts.",
+  "plugins": [
+    {
+      "name": "teams-transcripts",
+      "source": ".",
+      "description": "Fetch Teams meeting transcripts via a Microsoft 365 MCP connector and save them as clean local markdown. Includes an in-progress-meeting guard.",
+      "category": "productivity",
+      "keywords": ["teams", "transcripts", "microsoft-365", "meetings"]
+    }
+  ]
+}
