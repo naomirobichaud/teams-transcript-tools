@@ -1,8 +1,8 @@
 {
   "name": "teams-transcripts",
   "displayName": "Teams Transcript Fetch",
-  "version": "1.0.0",
-  "description": "Fetch Microsoft Teams meeting transcripts via a Microsoft 365 MCP connector and save them as clean local markdown files. Includes an in-progress-meeting guard so partial transcripts are never saved.",
+  "version": "1.1.0",
+  "description": "Fetch Microsoft Teams meeting transcripts via a Microsoft 365 MCP connector and save them as clean local markdown files. Includes an in-progress-meeting guard so partial transcripts are never saved, plus a setup skill that schedules a recurring hourly-on-weekdays auto-fetch.",
   "author": {
     "name": "Naomi Robichaud",
     "email": "nrobichaud@adobe.com"

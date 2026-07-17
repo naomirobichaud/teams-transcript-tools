@@ -3,7 +3,7 @@ name: teams-transcript-fetch
 description: >
   Fetch and save Microsoft Teams meeting transcripts as local markdown files. Use
   when the user explicitly invokes the teams-transcript-fetch skill, OR when invoked
-  by an approved scheduled/automated routine (e.g. a daily-teams-transcripts task).
+  by an approved scheduled/automated routine (e.g. a teams-transcripts-routine task).
   Do NOT trigger from casual meeting mentions in conversation, sync requests, or
   other implicit signals. The user provides a meeting name (or names) and an optional
   date or date range. The skill searches the Outlook calendar via a Microsoft 365 MCP
@@ -15,7 +15,7 @@ description: >
 
 Fetch one or more Microsoft Teams meeting transcripts and save them as readable local markdown files.
 
-**Run this skill when the user explicitly invokes it, or when an approved scheduled/automated routine (such as a `daily-teams-transcripts` task) invokes it.** Do not trigger it from meeting names mentioned in casual conversation, sync requests, or any other implicit signal.
+**Run this skill when the user explicitly invokes it, or when an approved scheduled/automated routine (such as a `teams-transcripts-routine` task) invokes it.** Do not trigger it from meeting names mentioned in casual conversation, sync requests, or any other implicit signal.
 
 ---
 

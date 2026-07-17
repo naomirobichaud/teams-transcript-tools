@@ -1,25 +1,31 @@
-# Optional recipe: daily auto-fetch routine (runs hourly on workdays)
+# Reference: the recurring routine-fetch task prompt
 
-This is a **template** for a scheduled task that runs during your workday and fetches
-any newly-finished Teams meetings automatically. It is optional — the skill works fine
-on its own. Copy the prompt below into a Claude Code scheduled task (see README →
-"Optional: set up the daily auto-fetch routine"). Nothing here is machine-specific except
-the two clearly-marked values you set once.
+The easiest way to set up the recurring fetch is the **`setup-routine-fetch` skill** — it
+interviews you (working hours, output dir), sets the activation cutoff to "now", and creates
+the scheduled task (`teams-transcripts-routine`) for you. See README → "Set up the routine
+fetch".
 
-## Two values to set
+This file is kept as a **reference** — the exact prompt the setup skill writes into the task,
+so you can review it, audit it, or set the task up by hand if you prefer not to use the skill.
+It runs hourly on weekdays and fetches any newly-finished Teams meetings automatically. It is
+optional — the fetch skill works fine on its own. Nothing here is machine-specific except the
+two clearly-marked values you set once.
 
-- **ACTIVATION CUTOFF** — an ISO timestamp of roughly when you set the task up. The routine
-  ignores any meeting that ended before this, so it never backfills your entire history.
-  Set it to "now" when you create the task.
+## Two values that get set once
+
+- **ACTIVATION CUTOFF** — an ISO timestamp of roughly when the task is set up. The routine
+  ignores any meeting that ended before this, so it never backfills your entire history. The
+  setup skill sets it to "now"; if setting up by hand, do the same.
 - **Output directory** — controlled by the `TEAMS_TRANSCRIPTS_DIR` env var (default
-  `~/Documents/Transcripts`), same as the skill. You do not edit a path in this prompt.
+  `~/Documents/Transcripts`), same as the fetch skill. You do not edit a path in this prompt;
+  it is resolved at run time.
 
 ## Suggested schedule
 
-`0 10-17 * * 1-5` — top of each hour, 10am–5pm, weekdays (cron is evaluated in your local
-timezone). Adjust to your working hours.
+`0 8-17 * * 1-5` — top of each hour, 8am–5pm, weekdays (cron is evaluated in your local
+timezone). Adjust to your working hours. The setup skill offers this default plus alternatives.
 
-## Task prompt (copy this)
+## Task prompt (this is what the setup skill generates)
 
 ```
 You are a lightweight transcript fetcher. Today's date is available from the system. Follow this order exactly and minimize token use — most runs find nothing new and should stop after a single calendar check plus one log line.
@@ -38,9 +44,16 @@ Resolve the output directory at the start: TRANSCRIPTS_DIR="${TEAMS_TRANSCRIPTS_
 
 5. If there are NO eligible new meetings: append one line to $TRANSCRIPTS_DIR/_log.md: "YYYY-MM-DD HH:MM — checked, nothing new" (append " (N deferred, still in progress)" if you skipped any at the gate). Then STOP. Do not call any other tools.
 
-6. If there ARE eligible new meetings: invoke the teams-transcript-fetch skill to retrieve and save each one, passing today's date so it does not search historic dates. The skill runs its own final completeness check and will REFUSE to save a transcript that is still growing; if it reports a meeting as still in progress, do not force it — log it as deferred and let the next run pick it up. After fetching, append a line to _log.md noting which meeting(s) were saved (and any deferred).
+6. If there ARE eligible new meetings: invoke the teams-transcript-fetch skill to retrieve and save each one, passing today's date so it does not search historic dates. (This skill is approved for scheduled/automated invocation by this task.) The skill runs its own final completeness check and will REFUSE to save a transcript that is still growing; if it reports a meeting as still in progress, do not force it — log it as deferred and let the next run pick it up. After fetching, append a line to _log.md noting which meeting(s) were saved (and any deferred).
 
 Notes:
 - Keep the empty-run path as cheap as possible: one calendar check, one log append, stop.
-- Never trade completeness for a single early fetch: when in doubt about whether a meeting is finished, defer it.
+- Never trade completeness for a single early fetch: when in doubt about whether a meeting is finished, defer it. The hourly cadence means a deferred meeting is fetched, in full, within the next hour or two.
 ```
+
+## Set it up by hand (if you skip the skill)
+
+Use the `schedule` skill (or the `create_scheduled_task` tool) to create a task with id
+`teams-transcripts-routine`, cron `0 8-17 * * 1-5` (adjust to your hours), and the prompt
+above — replacing the activation-cutoff placeholder with the current time. The
+`setup-routine-fetch` skill does all of this for you.
