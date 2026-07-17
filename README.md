@@ -83,32 +83,6 @@ and reports the path plus a short summary of key topics.
 
 ---
 
-## Optional: set up the daily auto-fetch routine
-
-Want new transcripts pulled automatically during your workday? See
-[`examples/daily-teams-transcripts.md`](examples/daily-teams-transcripts.md) for a ready-to-copy
-scheduled-task prompt. In Claude Code, use the `schedule` skill (or ask: *"schedule this to run
-hourly on weekdays"*) and paste in that prompt, setting the two marked values (activation cutoff
-+ your working hours). The routine only ever fetches meetings that have genuinely finished, and
-retries anything still in progress on the next run.
-
----
-
-## How it avoids truncated transcripts
-
-Teams will hand back a *partial* transcript for a meeting that's still live or running past
-its scheduled end. Two layers prevent saving those:
-
-- The **skill** computes when the last words were spoken and, if that's within the last ~15
-  minutes, treats the meeting as still in progress and declines to save.
-- The **scheduled routine** (if you use it) won't even attempt a meeting until 20 minutes
-  past its scheduled end, and re-evaluates deferred meetings on the next hourly run.
-
-If an earlier fetch caught a meeting mid-flight, a later fetch with a longer transcript
-overwrites the shorter file.
-
----
-
 ## License
 
 MIT
