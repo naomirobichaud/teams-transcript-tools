@@ -90,23 +90,12 @@ date "+%Y-%m-%dT%H:%M:%S"
 Use that value as the `ACTIVATION CUTOFF` in the task prompt below. This is set once, at
 creation, and is what stops the first run from pulling the user's entire meeting history.
 
-### 4. Check for an existing or conflicting routine task
+### 4. Check for an existing routine task
 
-List scheduled tasks and check two things before creating anything:
-
-- **Same id (`teams-transcripts-routine`).** If a task with this id already exists, tell the
-  user and ask whether to overwrite it (re-create with the new settings) or leave it as-is —
-  do **not** silently create a duplicate. Creating with the same `taskId` overwrites the
-  existing task.
-- **A different task that already fetches Teams transcripts.** Scan the other tasks' ids and
-  descriptions for one that looks like an earlier or parallel transcript-fetch routine (for
-  example a hand-rolled task, or one whose prompt fetches into the same `$TRANSCRIPTS_DIR`).
-  If you find one, **warn the user**: running two such tasks means both will fetch the same
-  meetings into the same folder on each cycle — redundant work and interleaved `_log.md`
-  lines (not data loss; same filenames just overwrite). Recommend they pause or remove the
-  old one so only one routine runs. This skill is create-only, so do **not** disable or delete
-  the other task yourself — point them at `update_scheduled_task` (`enabled: false`) or
-  `delete_scheduled_task` / the `schedule` skill, and let them decide.
+List scheduled tasks and look for one with id `teams-transcripts-routine`. If it already
+exists, tell the user and ask whether to overwrite it (re-create with the new settings) or
+leave it as-is — do **not** silently create a duplicate. Creating with the same `taskId`
+overwrites the existing task.
 
 ### 5. Create the scheduled task
 
