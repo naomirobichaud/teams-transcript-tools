@@ -35,11 +35,21 @@ transcripts itself.
 1. **The `teams-transcript-fetch` skill must be installed** (it ships in this same
    `teams-transcripts` plugin). The scheduled task this skill creates calls it on each run.
    If it is not available, tell the user to install the plugin first and stop.
-2. **Scheduled-task tooling.** This skill needs a way to register a scheduled task. Use the
-   `create_scheduled_task` tool if it is available in the session; otherwise fall back to the
-   `schedule` skill, passing it the equivalent cron expression, task id, and prompt described
-   below. If neither is available, tell the user their Claude Code build does not expose
-   scheduled tasks and stop.
+2. **The local persistent scheduled-task system.** This skill registers a task with your
+   *local* Claude Code scheduled-task system — the one that stores tasks under
+   `~/.claude/scheduled-tasks/` and runs them while the local app is open (the
+   `create_scheduled_task` / `list_scheduled_tasks` tools). That system is **required**. If
+   those tools are not present in the session, **stop** and tell the user:
+
+   > *"This routine has to run on your local machine — it reads your local transcripts folder,
+   > uses your local Microsoft 365 / Outlook MCP connector, and calls your locally-installed
+   > `teams-transcript-fetch` skill. Set it up from the local desktop Claude Code app, where
+   > the scheduled-task tools are available."*
+
+   Do **not** fall back to the cloud `schedule` skill / `RemoteTrigger` routines (they run in
+   an isolated cloud sandbox with no access to your local files, connectors, or plugin skills)
+   or to session-scoped `CronCreate` jobs (in-memory, expire after a few days). Neither can run
+   this routine, so they are not substitutes — refuse rather than create a task that can't work.
 3. **A Microsoft 365 / Outlook MCP connector** is required *at run time* by the fetch skill,
    not by this setup step. You may check for one (a tool whose name ends with
    `__outlook_calendar_search`) and warn the user if it's missing, but do not block setup on
@@ -145,10 +155,9 @@ Confirm to the user, plainly:
    is due, it runs on next launch.
 4. **How to test it now:** run the task manually ("Run now") — on an empty day it should just
    append a `checked, nothing new` line to `$TRANSCRIPTS_DIR/_log.md`.
-5. **How to pause or remove it later** (this skill doesn't manage that): pause with the
-   scheduled-task tooling (`update_scheduled_task` with `enabled: false`, or the `schedule`
-   skill), and remove with `delete_scheduled_task`. Both key off the id
-   `teams-transcripts-routine`.
+5. **How to pause or remove it later** (this skill doesn't manage that): pause with
+   `update_scheduled_task` (`enabled: false`) and remove with `delete_scheduled_task`, both
+   keyed off the id `teams-transcripts-routine`.
 
 ---
 
