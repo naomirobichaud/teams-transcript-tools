@@ -122,7 +122,9 @@ Microsoft 365 connector, and `/loop` jobs are session-only and expire after ~7 d
 ### Good to know
 
 - **Scheduled tasks run only while the desktop app is open.** If it's closed when a run is due, it
-  runs on next launch.
+  runs on next launch. To cover an overnight close, each run looks back over the **last ~48 hours**
+  (yesterday and today), so a meeting that finished late yesterday is still picked up the next
+  morning rather than being missed.
 - The routine only ever fetches meetings that have **genuinely finished** (20-minute settle buffer)
   and retries anything still in progress on the next hourly run — so it never saves a truncated
   transcript.
