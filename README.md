@@ -107,17 +107,15 @@ baked in at creation is the setup timestamp — the output path stays an env var
 
 ### Requires the Claude Code desktop app
 
-Durable local scheduled tasks are a built-in feature of the **Claude Code desktop app** — it ships
-a `create_scheduled_task` tool (backing `~/.claude/scheduled-tasks/`) out of the box, with no
-configuration. **The standalone terminal CLI does not have this**, and its alternatives don't fit:
-cloud routines (`/schedule`) run in an isolated sandbox with no access to your local files or your
-Microsoft 365 connector, and `/loop` jobs are session-only and expire after ~7 days.
+The routine runs as a durable local scheduled task, which is a **Claude Code desktop app** feature.
+This applies to the VS Code/JetBrains extensions too — only the desktop app can schedule a routine
+with access to your local files and connector; the on-demand fetch, though, works everywhere.
 
 - **On the desktop app** → the skill creates `teams-transcripts-routine` for you automatically.
-- **On the terminal CLI** → the skill can't create it (no local scheduler there), so instead it
-  fills in the complete routine and hands it to you with steps to add it via the desktop app's
-  **Routines** panel (**New routine → Local**). That same ready-to-paste routine also lives in
-  [`examples/routine-fetch-task.md`](examples/routine-fetch-task.md).
+- **On the terminal CLI** → the skill fills in the complete routine and hands it to you with steps
+  to add it via the desktop app's **Routines** panel (**New routine → Local**). That same
+  ready-to-paste routine lives in
+  [`skills/setup-routine-fetch/routine-prompt.md`](skills/setup-routine-fetch/routine-prompt.md).
 
 ### Good to know
 
