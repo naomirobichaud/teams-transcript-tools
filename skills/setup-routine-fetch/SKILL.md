@@ -22,11 +22,14 @@ and on each run invokes the companion **`teams-transcript-fetch`** skill for any
 that has genuinely finished. This skill only *creates* the task — it never fetches
 transcripts itself.
 
-> **Why a setup skill and not a bundled cron file?** A Claude Code plugin cannot ship a
-> live scheduled task — scheduled tasks are machine-local, stored as
-> `~/.claude/scheduled-tasks/<taskId>/SKILL.md` and registered with the scheduler at
-> creation time. So the portable way to package a recurring routine is a setup skill that
-> creates the task on the adopting user's machine. That's what this is.
+> **Why a setup skill, and where it works.** Durable local scheduled tasks — the ones stored
+> under `~/.claude/scheduled-tasks/<taskId>/` that run on a schedule *with* access to your local
+> files and connectors — are a built-in feature of the **Claude Code desktop app**, created via
+> its `create_scheduled_task` tool. A plugin can't ship a live task of its own, so this skill is
+> the bridge. On the **desktop app** it creates the task for you automatically. In the **terminal
+> CLI** (which has no such tool) it instead generates a ready-to-register routine and walks you
+> through adding it — because durable local scheduling simply isn't a CLI capability. Either way
+> you never hand-edit a prompt.
 
 ---
 
@@ -35,21 +38,20 @@ transcripts itself.
 1. **The `teams-transcript-fetch` skill must be installed** (it ships in this same
    `teams-transcripts` plugin). The scheduled task this skill creates calls it on each run.
    If it is not available, tell the user to install the plugin first and stop.
-2. **The local persistent scheduled-task system.** This skill registers a task with your
-   *local* Claude Code scheduled-task system — the one that stores tasks under
-   `~/.claude/scheduled-tasks/` and runs them while the local app is open (the
-   `create_scheduled_task` / `list_scheduled_tasks` tools). That system is **required**. If
-   those tools are not present in the session, **stop** and tell the user:
-
-   > *"This routine has to run on your local machine — it reads your local transcripts folder,
-   > uses your local Microsoft 365 / Outlook MCP connector, and calls your locally-installed
-   > `teams-transcript-fetch` skill. Set it up from the local desktop Claude Code app, where
-   > the scheduled-task tools are available."*
-
-   Do **not** fall back to the cloud `schedule` skill / `RemoteTrigger` routines (they run in
-   an isolated cloud sandbox with no access to your local files, connectors, or plugin skills)
-   or to session-scoped `CronCreate` jobs (in-memory, expire after a few days). Neither can run
-   this routine, so they are not substitutes — refuse rather than create a task that can't work.
+2. **Desktop app vs. CLI — this decides how the task is registered.** Durable local scheduled
+   tasks are a **Claude Code desktop app** feature: the desktop app ships a built-in
+   `create_scheduled_task` tool (backing `~/.claude/scheduled-tasks/`) out of the box, with no
+   configuration. The standalone **terminal CLI does not have it**, and its schedulers don't fit
+   this routine — cloud `schedule` / `RemoteTrigger` runs in an isolated sandbox with no access to
+   your local files or Microsoft 365 connector, and session-scoped `CronCreate` / `/loop` jobs are
+   in-memory and expire in ~7 days. So branch on the tool:
+   - **If `create_scheduled_task` is available** (desktop app) → do the **Automatic setup** below
+     (steps 1–6).
+   - **If it is NOT** (terminal CLI, or any session without it) → do **not** substitute the cloud or
+     in-memory schedulers. Go to **Manual setup** (the section right after step 6): still interview
+     and generate the fully filled-in routine, then hand it to the user with registration steps,
+     leading with the representative message quoted there so it's clear *why* automatic setup isn't
+     possible in that session.
 3. **A Microsoft 365 / Outlook MCP connector** is required *at run time* by the fetch skill,
    not by this setup step. You may check for one (a tool whose name ends with
    `__outlook_calendar_search`) and warn the user if it's missing, but do not block setup on
@@ -57,7 +59,10 @@ transcripts itself.
 
 ---
 
-## Step-by-step process
+## Automatic setup (Claude Code desktop app)
+
+Use this path when `create_scheduled_task` is available. Steps 1–3 (resolve dir, interview,
+compute cutoff) are shared with Manual setup; steps 4–6 do the actual registration.
 
 ### 1. Resolve the output directory (do not hardcode a path)
 
@@ -158,6 +163,56 @@ Confirm to the user, plainly:
 5. **How to pause or remove it later** (this skill doesn't manage that): pause with
    `update_scheduled_task` (`enabled: false`) and remove with `delete_scheduled_task`, both
    keyed off the id `teams-transcripts-routine`.
+
+---
+
+## Manual setup (terminal CLI, or any session without `create_scheduled_task`)
+
+Reach here when the scheduled-task tool is not available (see Prerequisite 2). Do **not** fall
+back to the cloud `schedule` skill or `CronCreate` — neither can run this routine. Instead:
+
+### M1. Lead with the representative message
+
+Tell the user plainly *why* you can't create it here, and that you'll hand them a ready-to-add
+routine:
+
+> *"Heads up — this routine has to run on the **Claude Code desktop app**. Durable local scheduled
+> tasks (the kind that run on a schedule and can reach your local Transcripts folder and your
+> Microsoft 365 connector) are a built-in desktop-app feature; the terminal CLI you're in right now
+> doesn't provide that scheduler. The CLI's alternatives don't fit — cloud routines can't see your
+> local files or connector, and `/loop` jobs are session-only and expire after about a week. So I
+> can't create the task from here, but I've filled in the exact routine for you to add in the
+> desktop app — it takes about a minute."*
+
+### M2. Still run steps 1–3
+
+Resolve the output dir, interview working hours, and compute the activation cutoff (= now), exactly
+as in the automatic path, so you can produce a complete, filled-in routine.
+
+### M3. Output the ready-to-register routine
+
+Print the full task for the user to copy, with the cutoff already substituted and the cron they chose:
+
+~~~
+Task name / id:  teams-transcripts-routine
+Description:     Fetch newly-finished Teams transcripts hourly on weekdays
+Schedule (cron): 0 8-17 * * 1-5      (or the range they chose; local time)
+
+Prompt:
+<the "Routine task prompt" from step 5, with ACTIVATION CUTOFF filled in>
+~~~
+
+### M4. Give the registration steps
+
+- Open the **Claude Code desktop app** → **Routines** in the sidebar → **New routine** → **Local**.
+- Paste the prompt, set the schedule to the cron shown, name it `teams-transcripts-routine`, and save.
+- (Equivalently, from *any* desktop-app session you can just ask: *"create a local scheduled task
+  named `teams-transcripts-routine`, cron `0 8-17 * * 1-5`, with this prompt: …"* — the desktop app
+  will create it.)
+- The same filled-in routine also lives, as a copy-paste reference, in
+  [`examples/routine-fetch-task.md`](../../examples/routine-fetch-task.md).
+
+Once added on the desktop app, it behaves identically to the automatic path.
 
 ---
 

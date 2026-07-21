@@ -25,6 +25,13 @@ two clearly-marked values you set once.
 `0 8-17 * * 1-5` — top of each hour, 8am–5pm, weekdays (cron is evaluated in your local
 timezone). Adjust to your working hours. The setup skill offers this default plus alternatives.
 
+## How to add it by hand (Claude Code desktop app)
+
+Durable local scheduled tasks live in the **Claude Code desktop app** — the standalone terminal
+CLI has no such scheduler. To register this by hand: open the desktop app → **Routines** → **New
+routine** → **Local**, name it `teams-transcripts-routine`, set the schedule to the cron above, and
+paste the prompt below (fill in the activation cutoff with your setup time).
+
 ## Task prompt (this is what the setup skill generates)
 
 ```

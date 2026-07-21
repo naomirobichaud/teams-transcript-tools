@@ -92,34 +92,42 @@ and reports the path plus a short summary of key topics.
 
 ## Set up the routine fetch
 
-Want new transcripts pulled automatically during your workday? Don't hand-copy anything —
-invoke the setup skill **from the local desktop Claude Code app**:
+Want new transcripts pulled automatically during your workday? Invoke the setup skill — it does
+the wiring for you, no hand-copying:
 
 ```
 /teams-transcripts:setup-routine-fetch
 ```
 
 It interviews you (working hours, confirms your output dir), sets the activation cutoff to
-**now**, and creates a scheduled task named **`teams-transcripts-routine`** that runs **hourly
-on weekdays** and calls `teams-transcript-fetch` for each newly-finished meeting. The only
-value baked in at creation is the setup timestamp — the output path stays an env var and the
-Microsoft 365 connector is discovered at run time.
+**now**, and produces a scheduled task named **`teams-transcripts-routine`** that runs **hourly
+on weekdays** and calls `teams-transcript-fetch` for each newly-finished meeting. The only value
+baked in at creation is the setup timestamp — the output path stays an env var and the Microsoft
+365 connector is discovered at run time.
 
-A few things to know:
+### Requires the Claude Code desktop app
 
-- **Run setup from your local desktop Claude Code app.** The routine has to run locally — it
-  reads your local transcripts folder, uses your local Microsoft 365 connector, and calls the
-  locally-installed fetch skill. A cloud/web session's routines run in an isolated sandbox with
-  no access to any of that, so the setup skill will refuse to create the task there.
-- **Scheduled tasks run only while the app is open.** If it's closed when a run is due, it
+Durable local scheduled tasks are a built-in feature of the **Claude Code desktop app** — it ships
+a `create_scheduled_task` tool (backing `~/.claude/scheduled-tasks/`) out of the box, with no
+configuration. **The standalone terminal CLI does not have this**, and its alternatives don't fit:
+cloud routines (`/schedule`) run in an isolated sandbox with no access to your local files or your
+Microsoft 365 connector, and `/loop` jobs are session-only and expire after ~7 days.
+
+- **On the desktop app** → the skill creates `teams-transcripts-routine` for you automatically.
+- **On the terminal CLI** → the skill can't create it (no local scheduler there), so instead it
+  fills in the complete routine and hands it to you with steps to add it via the desktop app's
+  **Routines** panel (**New routine → Local**). That same ready-to-paste routine also lives in
+  [`examples/routine-fetch-task.md`](examples/routine-fetch-task.md).
+
+### Good to know
+
+- **Scheduled tasks run only while the desktop app is open.** If it's closed when a run is due, it
   runs on next launch.
-- The routine only ever fetches meetings that have **genuinely finished** (20-minute settle
-  buffer) and retries anything still in progress on the next hourly run — so it never saves a
-  truncated transcript.
+- The routine only ever fetches meetings that have **genuinely finished** (20-minute settle buffer)
+  and retries anything still in progress on the next hourly run — so it never saves a truncated
+  transcript.
 - **Pause or remove it later** (the setup skill only creates it) with `update_scheduled_task`
   (`enabled: false`) or `delete_scheduled_task`, keyed off the id `teams-transcripts-routine`.
-- Prefer to review or wire it up by hand? The exact task prompt the skill generates lives in
-  [`examples/routine-fetch-task.md`](examples/routine-fetch-task.md).
 
 ---
 
