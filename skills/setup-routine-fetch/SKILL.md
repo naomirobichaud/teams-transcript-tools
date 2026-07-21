@@ -96,14 +96,18 @@ Do not ask about the activation cutoff — it is always "now" (next step).
 ### 3. Compute the activation cutoff (= now)
 
 The routine must never backfill historic meetings, so it ignores anything that ended before
-the moment it was set up. Capture the current local time as the cutoff:
+the moment it was set up. Capture the current time as the cutoff **with an explicit UTC offset**
+so the comparison against calendar events (which the connector returns in UTC) is unambiguous:
 
 ```bash
-date "+%Y-%m-%dT%H:%M:%S"
+date "+%Y-%m-%dT%H:%M:%S%z"
 ```
 
-Use that value as the `ACTIVATION CUTOFF` in the task prompt below. This is set once, at
-creation, and is what stops the first run from pulling the user's entire meeting history.
+This produces e.g. `2026-07-17T18:00:00-0700` — the offset (`-0700`) is what lets the routine
+compare the cutoff against UTC event times correctly. A naive timestamp with no offset would be
+off by the local–UTC difference (hours) near the cutoff instant. Use this value as the
+`ACTIVATION CUTOFF` in the task prompt below. This is set once, at creation, and is what stops
+the first run from pulling the user's entire meeting history.
 
 ### 4. Check for an existing routine task
 
@@ -128,13 +132,13 @@ Create a task with:
 ```
 You are a lightweight transcript fetcher. Today's date is available from the system. Follow this order exactly and minimize token use — most runs find nothing new and should stop after a single calendar check plus one log line.
 
-ACTIVATION CUTOFF: <ACTIVATION-CUTOFF> (local time). This routine only handles meetings going forward from when it was set up. NEVER fetch or consider any meeting that ENDED before this cutoff timestamp — treat those as out of scope, even on a manual "Run now". This prevents backfilling historic meetings.
+ACTIVATION CUTOFF: <ACTIVATION-CUTOFF> (an ISO timestamp WITH a UTC offset, e.g. 2026-07-17T18:00:00-0700). This routine only handles meetings going forward from when it was set up. NEVER fetch or consider any meeting that ENDED before this cutoff timestamp — treat those as out of scope, even on a manual "Run now". This prevents backfilling historic meetings. When comparing, normalize BOTH the cutoff and each meeting's end time to UTC (calendar events are typically returned in UTC) so the comparison is not off by the local-UTC offset near the cutoff instant.
 
 Resolve the output directory at the start: TRANSCRIPTS_DIR="${TEAMS_TRANSCRIPTS_DIR:-$HOME/Documents/Transcripts}"; create it if missing. Use it everywhere below.
 
-1. Check $TRANSCRIPTS_DIR for transcript files already saved today (files whose name starts with today's date, YYYY-MM-DD).
+1. Check $TRANSCRIPTS_DIR for transcript files already saved today OR yesterday (files whose name starts with today's or yesterday's date, YYYY-MM-DD). Looking back two days is deliberate: if the app was closed overnight, this run must still catch a meeting that finished late yesterday after the last successful run.
 
-2. Find the Microsoft 365 / Outlook MCP connector in this session (a tool whose name ends with __outlook_calendar_search); if none is connected, append "YYYY-MM-DD HH:MM — no M365 connector, skipped" to $TRANSCRIPTS_DIR/_log.md and STOP. Otherwise check the calendar for today's meetings, noting each meeting's scheduled START and END time. Consider only meetings that ended at or after the ACTIVATION CUTOFF above; ignore any meeting that ended before the cutoff.
+2. Find the Microsoft 365 / Outlook MCP connector in this session (a tool whose name ends with __outlook_calendar_search); if none is connected, append "YYYY-MM-DD HH:MM — no M365 connector, skipped" to $TRANSCRIPTS_DIR/_log.md and STOP. Otherwise check the calendar for meetings from yesterday and today (roughly the last 48 hours), noting each meeting's scheduled START and END time. Consider only meetings that ended at or after the ACTIVATION CUTOFF above (comparing in UTC as noted); ignore any meeting that ended before the cutoff.
 
 3. COMPLETENESS GATE — a meeting is eligible to fetch only if it has ACTUALLY finished, not merely if its scheduled slot is past. A meeting that is still live, or running over its scheduled end, returns a PARTIAL transcript; saving that would lock in a truncated record. Use a settle buffer of 20 minutes. Defer (skip this run) any meeting where: its scheduled end is still in the future; OR its scheduled end was less than 20 minutes ago (still settling / may be running over); OR it otherwise appears in progress. Deferring is safe: deferred meetings are never saved, and because this routine runs hourly, the next run re-evaluates them automatically — nothing is lost.
 
@@ -142,7 +146,7 @@ Resolve the output directory at the start: TRANSCRIPTS_DIR="${TEAMS_TRANSCRIPTS_
 
 5. If there are NO eligible new meetings: append one line to $TRANSCRIPTS_DIR/_log.md: "YYYY-MM-DD HH:MM — checked, nothing new" (append " (N deferred, still in progress)" if you skipped any at the gate). Then STOP. Do not call any other tools.
 
-6. If there ARE eligible new meetings: invoke the teams-transcript-fetch skill to retrieve and save each one, passing today's date so it does not search historic dates. (This skill is approved for scheduled/automated invocation by this task.) The skill runs its own final completeness check and will REFUSE to save a transcript that is still growing; if it reports a meeting as still in progress, do not force it — log it as deferred and let the next run pick it up. After fetching, append a line to _log.md noting which meeting(s) were saved (and any deferred).
+6. If there ARE eligible new meetings: invoke the teams-transcript-fetch skill to retrieve and save each one, passing that meeting's own date (today or yesterday) so it does not search further-back historic dates. (This skill is approved for scheduled/automated invocation by this task.) The skill runs its own final completeness check and will REFUSE to save a transcript that is still growing; if it reports a meeting as still in progress, do not force it — log it as deferred and let the next run pick it up. After fetching, append a line to _log.md noting which meeting(s) were saved (and any deferred).
 
 Notes:
 - Keep the empty-run path as cheap as possible: one calendar check, one log append, stop.
