@@ -37,8 +37,8 @@ This skill has **no hardcoded credentials or server IDs**. It relies on three th
 
 ## Inputs
 
-- **Meeting name(s)**: Required. One or more names or partial names to search for.
-- **Date or date range**: Optional. Defaults to the past 7 days if omitted.
+- **Meeting name(s)**: Optional. One or more names or partial names to search for. **If omitted, the skill lists recent meetings with transcripts and asks which to fetch — see step 0.5.**
+- **Date or date range**: Optional. Defaults to the past 7 days if omitted (past 24 hours for the no-name listing in step 0.5).
 
 ---
 
@@ -55,6 +55,16 @@ This skill has **no hardcoded credentials or server IDs**. It relies on three th
   ```
 
 Below, `<prefix>` means the connector prefix discovered here.
+
+### 0.5 No meeting name given — list recent meetings and ask
+
+**Only when the skill is invoked with no meeting name(s)** (e.g. a bare `/teams-transcript-fetch`). If a name was provided, skip this step and go to step 1.
+
+- Search `<prefix>__outlook_calendar_search` with **no name filter** over the **past 24 hours** (use a broad/empty `query` and 24h date bounds).
+- For each returned event, read it (step 2) enough to know whether it has a `meetingTranscriptUrl`. **Keep only events that have a transcript** — drop meetings with no transcript from the list.
+- Sort the kept meetings **most-recent-first** and present at most the **5 most recent** as a numbered list: `N. <title> — <Day HH:MM local tz> — organizer: <name>`. If more than 5 qualified, note how many more were omitted (e.g. "(3 older meetings with transcripts not shown — narrow by name or date)").
+- Ask the user which one(s) to fetch. Accept a single number, several numbers, or "all". Then proceed from step 2 for each chosen meeting (you already have their event objects/transcript URLs).
+- **Edge cases:** if no meetings in the past 24h have transcripts, say so and suggest providing a name or a wider date range — do not error out. Note that capping the display to 5 is a readability choice; it does not reduce the calendar-search cost, which is bounded by the 24h window.
 
 ### 1. Search the calendar
 
