@@ -8,6 +8,12 @@ The easiest way to set this up is the **`setup-routine-fetch` skill** — it int
 (working hours, output dir), sets the activation cutoff to "now", and creates the task for you.
 Everything below is for reviewing or setting it up by hand.
 
+**Where this can run.** The on-demand `teams-transcript-fetch` skill works in any Claude Code
+surface — CLI, the VS Code/JetBrains extensions, and the desktop app. The **recurring routine
+below requires the desktop app**, because only it can schedule a task that reaches your local
+Transcripts folder and your Outlook/M365 connector. If you're CLI-only, run the fetch on demand,
+or install the desktop app just to hold the routine.
+
 ## The prompt (copy this verbatim)
 
 Paste this as the task prompt, replacing `<ACTIVATION-CUTOFF>` with your setup time (see below).

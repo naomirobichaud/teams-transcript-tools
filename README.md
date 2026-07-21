@@ -108,6 +108,8 @@ baked in at creation is the setup timestamp — the output path stays an env var
 ### Requires the Claude Code desktop app
 
 The routine runs as a durable local scheduled task, which is a **Claude Code desktop app** feature.
+This applies to the VS Code/JetBrains extensions too — only the desktop app can schedule a routine
+with access to your local files and connector; the on-demand fetch, though, works everywhere.
 
 - **On the desktop app** → the skill creates `teams-transcripts-routine` for you automatically.
 - **On the terminal CLI** → the skill fills in the complete routine and hands it to you with steps
