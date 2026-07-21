@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "teams-transcripts",
   "displayName": "Teams Transcript Fetch",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Fetch Microsoft Teams meeting transcripts via a Microsoft 365 MCP connector and save them as clean local markdown files. Includes an in-progress-meeting guard so partial transcripts are never saved, plus a setup skill that schedules a recurring hourly-on-weekdays auto-fetch.",
   "author": {
     "name": "Naomi Robichaud",

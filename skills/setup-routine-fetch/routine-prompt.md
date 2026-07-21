@@ -1,46 +1,22 @@
-# Reference: the recurring routine-fetch task prompt
+# The recurring routine-fetch task prompt
 
-The easiest way to set up the recurring fetch is the **`setup-routine-fetch` skill** — it
-interviews you (working hours, output dir), sets the activation cutoff to "now", and creates
-the scheduled task (`teams-transcripts-routine`) for you. See README → "Set up the routine
-fetch".
+This is the single source of truth for the `teams-transcripts-routine` task prompt. The
+`setup-routine-fetch` skill reads the fenced block below at run time and writes it into the
+scheduled task; a human setting the task up by hand copies the same block.
 
-This file is kept as a **reference** — the exact prompt the setup skill writes into the task,
-so you can review it, audit it, or set the task up by hand if you prefer not to use the skill.
-It runs hourly on weekdays and fetches any newly-finished Teams meetings automatically. It is
-optional — the fetch skill works fine on its own. Nothing here is machine-specific except the
-two clearly-marked values you set once.
+The easiest way to set this up is the **`setup-routine-fetch` skill** — it interviews you
+(working hours, output dir), sets the activation cutoff to "now", and creates the task for you.
+Everything below is for reviewing or setting it up by hand.
 
-## Two values that get set once
+## The prompt (copy this verbatim)
 
-- **ACTIVATION CUTOFF** — an ISO timestamp (with a UTC offset, e.g. `2026-07-17T18:00:00-0700`)
-  of roughly when the task is set up. The offset matters: the routine compares this against
-  calendar event times in UTC, so a naive offset-less timestamp could be off by hours near the
-  cutoff. The routine ignores any meeting that ended before this, so it never backfills your
-  entire history. Capture it with `date "+%Y-%m-%dT%H:%M:%S%z"`. The setup skill sets it to
-  "now"; if setting up by hand, do the same.
-- **Output directory** — controlled by the `TEAMS_TRANSCRIPTS_DIR` env var (default
-  `~/Documents/Transcripts`), same as the fetch skill. You do not edit a path in this prompt;
-  it is resolved at run time.
-
-## Suggested schedule
-
-`0 8-17 * * 1-5` — top of each hour, 8am–5pm, weekdays (cron is evaluated in your local
-timezone). Adjust to your working hours. The setup skill offers this default plus alternatives.
-
-## How to add it by hand (Claude Code desktop app)
-
-Durable local scheduled tasks live in the **Claude Code desktop app** — the standalone terminal
-CLI has no such scheduler. To register this by hand: open the desktop app → **Routines** → **New
-routine** → **Local**, name it `teams-transcripts-routine`, set the schedule to the cron above, and
-paste the prompt below (fill in the activation cutoff with your setup time).
-
-## Task prompt (this is what the setup skill generates)
+Paste this as the task prompt, replacing `<ACTIVATION-CUTOFF>` with your setup time (see below).
+Change nothing else — the output path stays as the env-var expression so it resolves at run time.
 
 ```
 You are a lightweight transcript fetcher. Today's date is available from the system. Follow this order exactly and minimize token use — most runs find nothing new and should stop after a single calendar check plus one log line.
 
-ACTIVATION CUTOFF: <SET-TO-YOUR-SETUP-TIME, an ISO timestamp WITH a UTC offset, e.g. 2026-07-17T18:00:00-0700>. This routine only handles meetings going forward from when it was set up. NEVER fetch or consider any meeting that ENDED before this cutoff timestamp — treat those as out of scope, even on a manual "Run now". This prevents backfilling historic meetings. When comparing, normalize BOTH the cutoff and each meeting's end time to UTC (calendar events are typically returned in UTC) so the comparison is not off by the local-UTC offset near the cutoff instant.
+ACTIVATION CUTOFF: <ACTIVATION-CUTOFF> (an ISO timestamp WITH a UTC offset, e.g. 2026-07-17T18:00:00-0700). This routine only handles meetings going forward from when it was set up. NEVER fetch or consider any meeting that ENDED before this cutoff timestamp — treat those as out of scope, even on a manual "Run now". This prevents backfilling historic meetings. When comparing, normalize BOTH the cutoff and each meeting's end time to UTC (calendar events are typically returned in UTC) so the comparison is not off by the local-UTC offset near the cutoff instant.
 
 Resolve the output directory at the start: TRANSCRIPTS_DIR="${TEAMS_TRANSCRIPTS_DIR:-$HOME/Documents/Transcripts}"; create it if missing. Use it everywhere below.
 
@@ -61,9 +37,26 @@ Notes:
 - Never trade completeness for a single early fetch: when in doubt about whether a meeting is finished, defer it. The hourly cadence means a deferred meeting is fetched, in full, within the next hour or two.
 ```
 
-## Set it up by hand (if you skip the skill)
+## Two values you set once
 
-Use the `schedule` skill (or the `create_scheduled_task` tool) to create a task with id
-`teams-transcripts-routine`, cron `0 8-17 * * 1-5` (adjust to your hours), and the prompt
-above — replacing the activation-cutoff placeholder with the current time. The
-`setup-routine-fetch` skill does all of this for you.
+- **ACTIVATION CUTOFF** — an ISO timestamp *with* a UTC offset (e.g. `2026-07-17T18:00:00-0700`)
+  of roughly when the task is set up. The offset matters: the routine compares this against
+  calendar event times in UTC, so a naive offset-less timestamp could be off by hours near the
+  cutoff. The routine ignores any meeting that ended before this, so it never backfills your
+  entire history. Capture it with `date "+%Y-%m-%dT%H:%M:%S%z"`. Set it to "now".
+- **Output directory** — controlled by the `TEAMS_TRANSCRIPTS_DIR` env var (default
+  `~/Documents/Transcripts`), same as the fetch skill. You do not edit a path in this prompt;
+  it is resolved at run time.
+
+## Suggested schedule
+
+`0 8-17 * * 1-5` — top of each hour, 8am–5pm, weekdays (cron is evaluated in your local
+timezone). Adjust to your working hours.
+
+## Adding it by hand (Claude Code desktop app)
+
+Durable local scheduled tasks live in the **Claude Code desktop app** — the standalone terminal
+CLI has no such scheduler. Open the desktop app → **Routines** → **New routine** → **Local**, name
+it `teams-transcripts-routine`, set the schedule to the cron above, and paste the prompt block
+(fill in the activation cutoff with your setup time). The `setup-routine-fetch` skill does all of
+this for you.

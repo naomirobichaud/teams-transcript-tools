@@ -22,15 +22,6 @@ and on each run invokes the companion **`teams-transcript-fetch`** skill for any
 that has genuinely finished. This skill only *creates* the task — it never fetches
 transcripts itself.
 
-> **Why a setup skill, and where it works.** Durable local scheduled tasks — the ones stored
-> under `~/.claude/scheduled-tasks/<taskId>/` that run on a schedule *with* access to your local
-> files and connectors — are a built-in feature of the **Claude Code desktop app**, created via
-> its `create_scheduled_task` tool. A plugin can't ship a live task of its own, so this skill is
-> the bridge. On the **desktop app** it creates the task for you automatically. In the **terminal
-> CLI** (which has no such tool) it instead generates a ready-to-register routine and walks you
-> through adding it — because durable local scheduling simply isn't a CLI capability. Either way
-> you never hand-edit a prompt.
-
 ---
 
 ## Prerequisites
@@ -123,35 +114,13 @@ Create a task with:
 - **taskId:** `teams-transcripts-routine`
 - **description:** `Fetch newly-finished Teams transcripts hourly on weekdays`
 - **cronExpression:** the range from step 2 (default `0 8-17 * * 1-5`), local time
-- **prompt:** the routine prompt below, with `<ACTIVATION-CUTOFF>` replaced by the timestamp
-  from step 3. Do not substitute anything else — the path stays as the env-var expression so
-  it resolves at run time.
+- **prompt:** the routine prompt. Read the bundled [`routine-prompt.md`](routine-prompt.md)
+  (sibling of this file) and use the fenced prompt block from it verbatim, substituting
+  `<ACTIVATION-CUTOFF>` with the timestamp from step 3. Do not substitute anything else — the
+  path stays as the env-var expression so it resolves at run time.
 
-**Routine task prompt (fill in the cutoff, then use verbatim):**
-
-```
-You are a lightweight transcript fetcher. Today's date is available from the system. Follow this order exactly and minimize token use — most runs find nothing new and should stop after a single calendar check plus one log line.
-
-ACTIVATION CUTOFF: <ACTIVATION-CUTOFF> (an ISO timestamp WITH a UTC offset, e.g. 2026-07-17T18:00:00-0700). This routine only handles meetings going forward from when it was set up. NEVER fetch or consider any meeting that ENDED before this cutoff timestamp — treat those as out of scope, even on a manual "Run now". This prevents backfilling historic meetings. When comparing, normalize BOTH the cutoff and each meeting's end time to UTC (calendar events are typically returned in UTC) so the comparison is not off by the local-UTC offset near the cutoff instant.
-
-Resolve the output directory at the start: TRANSCRIPTS_DIR="${TEAMS_TRANSCRIPTS_DIR:-$HOME/Documents/Transcripts}"; create it if missing. Use it everywhere below.
-
-1. Check $TRANSCRIPTS_DIR for transcript files already saved today OR yesterday (files whose name starts with today's or yesterday's date, YYYY-MM-DD). Looking back two days is deliberate: if the app was closed overnight, this run must still catch a meeting that finished late yesterday after the last successful run.
-
-2. Find the Microsoft 365 / Outlook MCP connector in this session (a tool whose name ends with __outlook_calendar_search); if none is connected, append "YYYY-MM-DD HH:MM — no M365 connector, skipped" to $TRANSCRIPTS_DIR/_log.md and STOP. Otherwise check the calendar for meetings from yesterday and today (roughly the last 48 hours), noting each meeting's scheduled START and END time. Consider only meetings that ended at or after the ACTIVATION CUTOFF above (comparing in UTC as noted); ignore any meeting that ended before the cutoff.
-
-3. COMPLETENESS GATE — a meeting is eligible to fetch only if it has ACTUALLY finished, not merely if its scheduled slot is past. A meeting that is still live, or running over its scheduled end, returns a PARTIAL transcript; saving that would lock in a truncated record. Use a settle buffer of 20 minutes. Defer (skip this run) any meeting where: its scheduled end is still in the future; OR its scheduled end was less than 20 minutes ago (still settling / may be running over); OR it otherwise appears in progress. Deferring is safe: deferred meetings are never saved, and because this routine runs hourly, the next run re-evaluates them automatically — nothing is lost.
-
-4. Cross-reference: from the meetings that PASS the completeness gate, identify those that do NOT yet have a complete saved transcript file from step 1. If a file saved earlier today looks truncated (its last spoken timestamp falls well before the meeting actually ended), treat it as not-yet-complete and re-fetch/overwrite once the meeting has settled.
-
-5. If there are NO eligible new meetings: append one line to $TRANSCRIPTS_DIR/_log.md: "YYYY-MM-DD HH:MM — checked, nothing new" (append " (N deferred, still in progress)" if you skipped any at the gate). Then STOP. Do not call any other tools.
-
-6. If there ARE eligible new meetings: invoke the teams-transcript-fetch skill to retrieve and save each one, passing that meeting's own date (today or yesterday) so it does not search further-back historic dates. (This skill is approved for scheduled/automated invocation by this task.) The skill runs its own final completeness check and will REFUSE to save a transcript that is still growing; if it reports a meeting as still in progress, do not force it — log it as deferred and let the next run pick it up. After fetching, append a line to _log.md noting which meeting(s) were saved (and any deferred).
-
-Notes:
-- Keep the empty-run path as cheap as possible: one calendar check, one log append, stop.
-- Never trade completeness for a single early fetch: when in doubt about whether a meeting is finished, defer it. The hourly cadence means a deferred meeting is fetched, in full, within the next hour or two.
-```
+`routine-prompt.md` is the single source of truth for the prompt text — do not paraphrase it or
+keep a second copy here.
 
 ### 6. Report back
 
@@ -213,8 +182,8 @@ Prompt:
 - (Equivalently, from *any* desktop-app session you can just ask: *"create a local scheduled task
   named `teams-transcripts-routine`, cron `0 8-17 * * 1-5`, with this prompt: …"* — the desktop app
   will create it.)
-- The same filled-in routine also lives, as a copy-paste reference, in
-  [`examples/routine-fetch-task.md`](../../examples/routine-fetch-task.md).
+- The prompt to paste is the fenced block in [`routine-prompt.md`](routine-prompt.md), which also
+  documents the two set-once values and the by-hand steps.
 
 Once added on the desktop app, it behaves identically to the automatic path.
 
